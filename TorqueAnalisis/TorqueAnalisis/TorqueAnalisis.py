@@ -28,7 +28,7 @@ class Section:
             
 class Main():
     def run(self):
-        
+       
         # Read data
         data, odometer = self.ReadData()
         
@@ -40,7 +40,7 @@ class Main():
             # print("Time: " + str(item.time) + " Torque: " + str(item.torque))
         
         # Eport Torque data
-        self.ExportTorqueData(data)
+        # self.ExportTorqueData(data)
         
         # Calculate delta time
         self.CalculateDeltaTime(data)
@@ -73,22 +73,19 @@ class Main():
         self.SimulateStrength(data)
         
     def AnalizeOdometer(self, odometer):
-        
-        if len(odometer) > 2:
+
+        f = open('Export\Odometer.csv', 'w', newline='')
+        writer = csv.writer(f, delimiter =';')
             
-            f = open('Export\Odometer.csv', 'w', newline='')
-            writer = csv.writer(f, delimiter =';')
+        print("File odometer: " + str(f) + "  " + str(f.name))
             
-            print("File odometer: " + str(f) + "  " + str(f.name))
+        headder = ["Total odometer"]
+        writer.writerow(headder)
             
-            headder = ["Initial odometer", "Final odometer"]
-            writer.writerow(headder)
-            
-            print("Odometer lenght: " + str(len(odometer)))
-            row = [str(odometer[0]).replace(".", ","), str(odometer[len(odometer) - 1]).replace(".", ",")]
-            writer.writerow(row)
+        row = [str(odometer).replace(".", ",")]
+        writer.writerow(row)
                
-            f.close()
+        f.close()
         
     def ExportTorqueData(self, data):
         
@@ -311,7 +308,10 @@ class Main():
                 tempDelta = 0.0
                 firstElement = False
             else:
-                tempDelta = (float(item.torque)-float(prevTorque))/(float(item.time)-float(prevTime))
+                if float(item.time)-float(prevTime) == 0:
+                    tempDelta = (float(item.torque)-float(prevTorque))/0.05
+                else:
+                    tempDelta = (float(item.torque)-float(prevTorque))/(float(item.time)-float(prevTime))
                 # print("dT= " + str(float(item.torque)-float(prevTorque)) + " dt= " + str(float(item.time)-float(prevTime)) + " dT/dt= " + str(tempDelta))
             
             item.slope = tempDelta
@@ -382,19 +382,18 @@ class Main():
         concatenatedData = []
         concatenatedData.clear()
         
-        concatenatedOdometer = []
-        concatenatedOdometer.clear()
+        totalOdometer = 0
         
         for file in fileNames:
             print("File name: " + str(file))
             currentData, currentOdometer = self.ReadAndAnalizeFile(file)
             print("Current data lenght: " + str(len(currentData)))
             concatenatedData += currentData
-            concatenatedOdometer += currentOdometer
+            totalOdometer += currentOdometer
             
         print("Complete data lenght: " + str(len(concatenatedData)))
             
-        return concatenatedData, concatenatedOdometer
+        return concatenatedData, totalOdometer
              
     
     def ReadAndAnalizeFile(self, file_path):
@@ -413,8 +412,9 @@ class Main():
         splitedData.clear()
         
         # List to store odometer data
-        odometerData = []
-        odometerData.clear()
+        initialOdometer = 0.0
+        finalOdometer = 0.0
+        firstData = True
         
         # Start reading data and spliting
         for item in datos:
@@ -449,21 +449,20 @@ class Main():
                     # print("Torque: " + str(currRawDatamessage.torque))
                 if can == "201":
                     
+                    if firstData:
+                        initialOdometer = self.GetOdometerValue(trace)
+                        firstData = False
+
                     # process can message and extract odometer info
-                    odometer = self.GetOdometerValue(trace)
-                    
-                    # Debug
-                    # print("Odometer value: " + str(odometer))
-                    
-                    # append data
-                    odometerData.append(odometer)
-                    
-                    # print("Torque: " + str(currRawDatamessage.torque))
+                    finalOdometer = self.GetOdometerValue(trace)
+
         # Debug
         # for item in self.splitedData:
         #     print(item)
-            
-        return splitedData, odometerData
+        
+        totalOdometer = finalOdometer - initialOdometer
+
+        return splitedData, totalOdometer
     
     # Method to process time variable
     def processTime(self, timeToProcess):
