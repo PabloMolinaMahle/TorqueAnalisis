@@ -330,7 +330,10 @@ class Main():
                 tempDelta = 0.0
                 firstElement = False
             else:
-                tempDelta = (float(item.slope)-float(prevSlope))/(float(item.time)-float(prevTime))
+                if (float(item.time)-float(prevTime) != 0):
+                    tempDelta = (float(item.slope)-float(prevSlope))/(float(item.time)-float(prevTime))
+                else:
+                    tempDelta = (float(item.slope)-float(prevSlope))/0.001
                 # print("dT= " + str(float(item.torque)-float(prevTorque)) + " dt= " + str(float(item.time)-float(prevTime)) + " dT/dt= " + str(tempDelta))
             
             item.slope2 = tempDelta
